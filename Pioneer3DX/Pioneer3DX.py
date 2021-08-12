@@ -110,19 +110,19 @@ class Pioneer3DX:
 
         self.pPar.theta = np.array([[0.5338], [0.2168], [-0.0134], [0.9560], [-0.0843], [1.0590]])
 
-    def getx(self):
+    def get_x(self):
         return 0
 
-    def gety(self):
+    def get_y(self):
         return 0
 
-    def geth(self):
+    def get_h(self):
         return 0
 
-    def getvel(self):
+    def get_vel(self):
         return 0
 
-    def getrotvel(self):
+    def get_rotvel(self):
         return 0
 
     def rGetSensorData(self):
@@ -130,11 +130,35 @@ class Pioneer3DX:
         if self.pFlag.Connected == 1:
             # MobileSim or Real P3DX
             # Robot pose from ARIA
-            self.pPos.Xc[0] = (self.getx())/1000    # x
-            self.pPos.Xc[1] = (self.gety())/1000    # y
-            self.pPos.Xc[5] = (self.geth())/1000    # psi
+            self.pPos.Xc[0] = (self.get_x())/1000    # x
+            self.pPos.Xc[1] = (self.get_y())/1000    # y
+            self.pPos.Xc[5] = (self.get_h())/1000    # psi
 
             # Robot velocities
             self.pSC.Ua = self.pSC.U
-            self.pSC.U[0] = (self.getvel()) / 1000    # linear
-            self.pSC.U[1] = (self.getrotvel()) / (180*math.pi)    # angular
+            self.pSC.U[0] = (self.get_vel()) / 1000    # linear
+            self.pSC.U[1] = (self.get_rotvel()) / (180*math.pi)    # angular
+
+            K1 = np.array([math.cos(self.pPos.Xc[5]), 0], [math.sin(self.pPos.Xc[5]), 0])
+            K2 = np.array([math.cos(self.pPos.Xc[5]), (-1)*self.pPar.a*math.sin(self.pPos.Xc[5])], [math.sin(self.pPos.Xc[5]), self.pPar.a*math.cos(self.pPos.Xc[5])])
+
+            self.pPos.Xc[6] = K1 * self.pSC.U
+            self.pPos.Xc[7] = K1 * self.pSC.U
+            self.pPos.Xc[11] = self.pSC.U[1]
+
+            # Pose of the Control point
+            self.pPos.X[0] = self.pPos.Xc[0] + np.array([self.pPar.a*math.cos(self.pPos.Xc[5])], [self.pPar.a*math.sin(self.pPos.Xc[5])], [0])
+            self.pPos.X[1] = self.pPos.Xc[1] + np.array([self.pPar.a * math.cos(self.pPos.Xc[5])], [self.pPar.a * math.sin(self.pPos.Xc[5])], [0])
+            self.pPos.X[2] = self.pPos.Xc[2] + np.array([self.pPar.a * math.cos(self.pPos.Xc[5])], [self.pPar.a * math.sin(self.pPos.Xc[5])], [0])
+
+            self.pPos.X[3] = self.pPos.Xc[3]
+            self.pPos.X[4] = self.pPos.Xc[4]
+            self.pPos.X[5] = self.pPos.Xc[5]
+
+            self.pPos.X[7] = K2 * self.pSC.U
+            self.pPos.X[8] = K2 * self.pSC.U
+
+            self.pPos.X[12] = self.pSC.U[2]
+
+        else:
+            self.pPos.Xc[0] = self.pPos.X[0] - np.array([self.pPar.a * math.cos(self.pPos.X[6])], [self.pPar.a * math.sin(self.pPos.X[6])], [0])
