@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
 import time
 import math
 
@@ -16,6 +18,13 @@ class Pioneer3DX:
         self.pPos = pPos()
         self.pSC = pSC()
         self.pFlag = pFlag
+
+        # Simulation:
+        triangle_points = np.array([[0, 2 * (np.sqrt(1 ** 2 - 0.5 ** 2)) / 3],
+                                    [-0.5, -(np.sqrt(1 ** 2 - 0.5 ** 2)) / 3],
+                                    [0.5, -(np.sqrt(1 ** 2 - 0.5 ** 2)) / 3]])
+
+        self.shape = Polygon(triangle_points, closed=False)
 
         self.iParameters()
         self.iControlVariables()
@@ -246,6 +255,19 @@ class Pioneer3DX:
 
         # Pose of the robot's center:
         self.pPos.Xc[0] = self.pPos.X[0] - np.array([[math.cos(self.pPos.X[5]), (-1)*math.sin(self.pPos.X[5]), 0], [math.sin(self.pPos.X[5]), math.cos(self.pPos.X[5]), 0], [0, 0, 1]])*np.array([[self.pPar.a*math.cos(self.pPar.alpha)], [self.pPar.a*math.sin(self.pPar.alpha)], [0]])
+
+
+    def Simulate(self):
+        fig_1 = plt.figure(1, figsize=[5, 5])
+        self.shape.set_color('r')
+        grid_1 = fig_1.add_subplot()
+        grid_1.add_patch(self.shape)
+        plt.xlabel("x")
+        plt.ylabel("y")
+        plt.axis([-5, 5, -5, 5])
+        plt.grid()
+        plt.title("Pioneer P3DX - Simulator")
+        plt.show()
 
 
 class pPar:
