@@ -7,8 +7,6 @@ import math
 
 class Pioneer3DX:
     def __init__(self, pFlag=0, pID=0):
-        # nargin: quantos argumentos foram passados (*kwargs)
-        # Tirar parametros de definicao da classe e chamar as funções
 
         # Properties or Parameters:
         self.pID = pID
@@ -31,11 +29,10 @@ class Pioneer3DX:
 
     def iControlVariables(self):
         # Robot pose:
-        self.pPos.X = np.zeros((12, 1))   # Current pose (point of control)
+        self.pPos.X = np.zeros((12, 1))  # Current pose (point of control)
         self.pPos.Xa = np.zeros((12, 1))  # Past pose
 
         self.pPos.Xc = np.zeros((12, 1))  # Current pose (center of the robot)
-        # self.pPos.Xp = np.zeros((12, 1))  # Current pose (computed by the robot)
 
         self.pPos.Xd = np.zeros((12, 1))  # Desired pose
         self.pPos.Xda = np.zeros((12, 1))  # Past desired pose
@@ -80,21 +77,21 @@ class Pioneer3DX:
         self.pSC.dUd = np.array([[0], [0]])  # Desired
 
     def iParameters(self):
-        self.pPar.Model = 'P3DX'    # Robot model
+        self.pPar.Model = 'P3DX'  # Robot model
 
         # Sample time:
-        self.pPar.Ts = 0.1    # For numerical integration
+        self.pPar.Ts = 0.1  # For numerical integration
         # self.pPar.ti = time.time()    # Flag time
 
         # Dynamic Model Parameters
-        self.pPar.g = 9.8    # [kg.m/s^2] Gravitational acceleration
+        self.pPar.g = 9.8  # [kg.m/s^2] Gravitational acceleration
 
         # [kg]
-        self.pPar.m = 0.429    # 0.442
+        self.pPar.m = 0.429  # 0.442
 
         # [m and rad]
-        self.pPar.a = 0.15    # Point of control
-        self.pPar.alpha = 0    # Angle of control
+        self.pPar.a = 0.15  # Point of control
+        self.pPar.alpha = 0  # Angle of control
 
         # [Identified Parameters]
         # Reference:
@@ -119,11 +116,11 @@ class Pioneer3DX:
 
     def get_vel(self):
         # Vel. Linear norma p.pPos.X 7,8,9
-        return math.sqrt((self.pPos.X[6])**2 + (self.pPos.X[7])**2 + (self.pPos.X[8])**2)
+        return math.sqrt((self.pPos.X[6]) ** 2 + (self.pPos.X[7]) ** 2 + (self.pPos.X[8]) ** 2)
 
     def get_rotvel(self):
         # Vel. Angular norma p.pPos.X 10,11,12
-        return math.sqrt((self.pPos.X[9])**2 + (self.pPos.X[10])**2 + (self.pPos.X[11])**2)
+        return math.sqrt((self.pPos.X[9]) ** 2 + (self.pPos.X[10]) ** 2 + (self.pPos.X[11]) ** 2)
 
     def set_vel(self, vel):
         # Definir a velocidade angular por p.pSC.U(2)
@@ -143,76 +140,74 @@ class Pioneer3DX:
         # Tava nesse if: "if self.pFlag.Connected == 1:"
         # MobileSim or Real P3DX
         # Robot pose from ARIA
-        self.pPos.Xc[0] = (self.get_x())/1000    # x
-        self.pPos.Xc[1] = (self.get_y())/1000    # y
-        self.pPos.Xc[5] = (self.get_h())/1000    # psi
+        self.pPos.Xc[0] = (self.get_x()) / 1000  # x
+        self.pPos.Xc[1] = (self.get_y()) / 1000  # y
+        self.pPos.Xc[5] = (self.get_h()) / 1000  # psi
 
         # Robot velocities
         self.pSC.Ua = self.pSC.U
-        self.pSC.U[0] = (self.get_vel()) / 1000    # linear
-        self.pSC.U[1] = (self.get_rotvel()) / (180*math.pi)    # angular
+        self.pSC.U[0] = (self.get_vel()) / 1000  # linear
+        self.pSC.U[1] = (self.get_rotvel()) / (180 * math.pi)  # angular
 
-        K1 = np.array([[math.cos(self.pPos.Xc[5]), 0], [math.sin(self.pPos.Xc[5]), 0]])
-        K2 = np.array([[math.cos(self.pPos.Xc[5]), (-1)*self.pPar.a*math.sin(self.pPos.Xc[5])], [math.sin(self.pPos.Xc[5]), self.pPar.a*math.cos(self.pPos.Xc[5])]])
+        K1 = np.array([[math.cos(self.pPos.Xc[5]), 0],
+                       [math.sin(self.pPos.Xc[5]), 0]])
+        K2 = np.array([[math.cos(self.pPos.Xc[5]), (-1) * self.pPar.a * math.sin(self.pPos.Xc[5])],
+                       [math.sin(self.pPos.Xc[5]), self.pPar.a * math.cos(self.pPos.Xc[5])]])
 
-        self.pPos.Xc[6] = K1 * self.pSC.U
-        self.pPos.Xc[7] = K1 * self.pSC.U
+        self.pPos.Xc[6] = np.dot(K1, self.pSC.U)
+        self.pPos.Xc[7] = np.dot(K1, self.pSC.U)
         self.pPos.Xc[11] = self.pSC.U[1]
 
         # Pose of the Control point (matriz de rotação em torno de z) r.set_pose
-        self.pPos.X[0] = self.pPos.Xc[0] + np.array([[self.pPar.a*math.cos(self.pPos.Xc[5])], [self.pPar.a*math.sin(self.pPos.Xc[5])], [0]])
-        self.pPos.X[1] = self.pPos.Xc[1] + np.array([[self.pPar.a * math.cos(self.pPos.Xc[5])], [self.pPar.a * math.sin(self.pPos.Xc[5])], [0]])
-        self.pPos.X[2] = self.pPos.Xc[2] + np.array([[self.pPar.a * math.cos(self.pPos.Xc[5])], [self.pPar.a * math.sin(self.pPos.Xc[5])], [0]])
+        self.pPos.X[0:3] = self.pPos.Xc[0:3] + np.array([[self.pPar.a * math.cos(self.pPos.Xc[5])],
+                                                         [self.pPar.a * math.sin(self.pPos.Xc[5])],
+                                                         [0]])
 
-        self.pPos.X[3] = self.pPos.Xc[3]
-        self.pPos.X[4] = self.pPos.Xc[4]
-        self.pPos.X[5] = self.pPos.Xc[5]
+        self.pPos.X[3:5] = self.pPos.Xc[3:5]
 
-        self.pPos.X[7] = K2 * self.pSC.U
-        self.pPos.X[8] = K2 * self.pSC.U
+        self.pPos.X[7] = np.dot(K2, self.pSC.U)
+        self.pPos.X[8] = np.dot(K2, self.pSC.U)
 
         self.pPos.X[12] = self.pSC.U[2]
 
         # Tava em um else:
-        self.pPos.Xc[0] = self.pPos.X[0] - np.array([[self.pPar.a * math.cos(self.pPos.X[6])], [self.pPar.a * math.sin(self.pPos.X[6])], [0]])
+        self.pPos.Xc[[0, 1, 5]] = self.pPos.X[[0, 1, 5]] - np.array([[self.pPar.a * math.cos(self.pPos.X[6])],
+                                                                     [self.pPar.a * math.sin(self.pPos.X[6])],
+                                                                     [0]])
 
     def rSendControlSignals(self):
         # Tava dentro de um if: "if self.pFlag.Connected == 1:"
         # Experiment Mode: MobileSim or P3DX
-        # self.set_vel((self.pSC.Ud[0])*1000)    # Linear velocity
-        # self.set_rotvel((self.pSC.Ud[1])/(math.pi*180))    # Angular velocity
+        self.set_vel((self.pSC.Ud[0]) * 1000)  # Linear velocity
+        self.set_rotvel((self.pSC.Ud[1]) / (math.pi * 180))  # Angular velocity
 
         # Stand-by mode:
-        self.pSC.Ud = np.array([[0],[0]])
+        self.pSC.Ud = np.array([[0], [0]])
 
         # Tava dentro de um else:
         # Simulation Mode
         self.pSC.U = self.pSC.Ud
-        self.sKinematicModel()    # Modify it by the dynamic model
+        self.sKinematicModel()  # Modify it by the dynamic model
 
     def rSetPose(self, Xo):
         # nargin? fazer o nargin aqui #xo ponto inicial onde o robo esta nesse momento
         # (matriz de rotação em torno de z) r.set_pose
-        self.pPos.X[0] = self.pPos.Xc[0] + np.array([[math.cos(self.pPos.X[5]), (-1)*math.sin(self.pPos.X[5]), 0, 0], [math.sin(self.pPos.X[5]), math.cos(self.pPos.X[5]), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])*np.array([[self.pPar.a*math.cos(self.pPar.alpha)], [self.pPar.a*math.sin(self.pPar.alpha)], [0], [0]])
-        self.pPos.X[1] = self.pPos.Xc[1] + np.array([[math.cos(self.pPos.X[5]), (-1) * math.sin(self.pPos.X[5]), 0, 0],
+        self.pPos.X[[0, 1, 2, 5]] = self.pPos.Xc[[0, 1, 2, 5]] + \
+                                    np.dot(np.array([[math.cos(self.pPos.X[5]), (-1) * math.sin(self.pPos.X[5]), 0, 0],
                                                      [math.sin(self.pPos.X[5]), math.cos(self.pPos.X[5]), 0, 0],
-                                                     [0, 0, 1, 0], [0, 0, 0, 1]]) * np.array(
-            [[self.pPar.a * math.cos(self.pPar.alpha)], [self.pPar.a * math.sin(self.pPar.alpha)], [0], [0]])
-        self.pPos.X[2] = self.pPos.Xc[2] + np.array([[math.cos(self.pPos.X[5]), (-1) * math.sin(self.pPos.X[5]), 0, 0],
-                                                     [math.sin(self.pPos.X[5]), math.cos(self.pPos.X[5]), 0, 0],
-                                                     [0, 0, 1, 0], [0, 0, 0, 1]]) * np.array(
-            [[self.pPar.a * math.cos(self.pPar.alpha)], [self.pPar.a * math.sin(self.pPar.alpha)], [0], [0]])
-        self.pPos.X[5] = self.pPos.Xc[5] + np.array([[math.cos(self.pPos.X[5]), (-1) * math.sin(self.pPos.X[5]), 0, 0],
-                                                     [math.sin(self.pPos.X[5]), math.cos(self.pPos.X[5]), 0, 0],
-                                                     [0, 0, 1, 0], [0, 0, 0, 1]]) * np.array(
-            [[self.pPar.a * math.cos(self.pPar.alpha)], [self.pPar.a * math.sin(self.pPar.alpha)], [0], [0]])
+                                                     [0, 0, 1, 0],
+                                                     [0, 0, 0, 1]]),
+                                           np.array([[self.pPar.a * math.cos(self.pPar.alpha)],
+                                                     [self.pPar.a * math.sin(self.pPar.alpha)],
+                                                     [0],
+                                                     [0]]))
 
         self.pPos.Xa = self.pPos.X
 
         # Tava dentro de um if: "if self.pFlag.Conected == 1:"
         # The position is given in milimeters and the heading in degrees:
-        # self.set_pose(self.pPos.Xc[0]*1000, self.pPos.Xc[1]*1000, self.pPos.Xc[5]*(180/math.pi))
-        self.set_pose()
+        #TODO: Verificar os parâmetros de set_pose
+        self.set_pose(np.array([[self.pPos.Xc[0]*1000], [self.pPos.Xc[1]*1000], [self.pPos.Xc[5]*(180/math.pi)]]))
 
     def sInvKinematicModel(self, dXr):
         # Verify vector length:
@@ -220,42 +215,48 @@ class Pioneer3DX:
 
         # Inverse Kinematic Matrix (2D)
         if l == 2:
-            Kinv = np.array([[math.cos(self.pPos.X[5]), math.sin(self.pPos.X[6])], [(-1) * math.sin(self.pPos.X[5]) / self.pPar.a, math.cos(self.pPos.X[5]) / self.pPar.a]])
-
+            Kinv = np.array([[math.cos(self.pPos.X[5]), math.sin(self.pPos.X[5])],
+                             [(-1) * math.sin(self.pPos.X[5]) / self.pPar.a, math.cos(self.pPos.X[5]) / self.pPar.a]])
+"""
         # Inverse Kinematic Matrix (3D)
         elif l == 3:
-            Kinv = np.array([[math.cos(self.pPos.X[5]), math.sin(self.pPos.X[6]), 0], [(-1) * math.sin(self.pPos.X[5]) / self.pPar.a, math.cos(self.pPos.X[5]) / self.pPar.a, 0], [0, 0, 0], [0, 0, 0]])
+            Kinv = np.array([[math.cos(self.pPos.X[5]), math.sin(self.pPos.X[6]), 0],
+                             [(-1) * math.sin(self.pPos.X[5]) / self.pPar.a, math.cos(self.pPos.X[5]) / self.pPar.a, 0],
+                             [0, 0, 0], [0, 0, 0]])
+"""
 
         else:
             print('Invalid vector length (please verify dXr).')
             Kinv = 0
 
-        self.pSC.Ur = Kinv*dXr
+        self.pSC.Ur = np.dot(Kinv, dXr)
 
     def sKinematicModel(self):
-        K = np.array([[math.cos(self.pPos.X[6]), (-1)*self.pPar.a*math.sin(self.pPos.X[5] + self.pPar.alpha)], [math.sin(self.pPos.X[5]), self.pPar.a*math.cos(self.pPos.X[5] + self.pPar.alpha)], [0, 1]])
+        K = np.array([[math.cos(self.pPos.X[5]), ((-1) * self.pPar.a * math.sin(self.pPos.X[5])) + self.pPar.alpha)],
+                      [math.sin(self.pPos.X[5]), (self.pPar.a * math.cos(self.pPos.X[5])) + self.pPar.alpha)],
+                      [0, 1]])
 
         # Current position
-        self.pPos.X[0] = self.pPos.X[0] + K*np.array([[self.pSC.U[0]], [self.pSC.U[1]]])*self.pPar.Ts
-        self.pPos.X[1] = self.pPos.X[1] + K * np.array([[self.pSC.U[0]], [self.pSC.U[1]]]) * self.pPar.Ts
-        self.pPos.X[5] = self.pPos.X[5] + K * np.array([[self.pSC.U[0]], [self.pSC.U[1]]]) * self.pPar.Ts
+        self.pPos.X[[0, 1, 5]] = self.pPos.X[[0, 1, 5]] + np.dot(K, np.array([[self.pSC.U[0]], [self.pSC.U[1]]]) * self.pPar.Ts
 
         # first-time derivative of the current position
-        self.pPos.X[6] = K*np.array([[self.pSC.U[0]], [self.pSC.U[1]]])
-        self.pPos.X[7] = K * np.array([[self.pSC.U[0]], [self.pSC.U[1]]])
-        self.pPos.X[11] = K * np.array([[self.pSC.U[0]], [self.pSC.U[1]]])
+        self.pPos.X[[6, 8, 11]] = np.dot(K, np.array([[self.pSC.U[0]], [self.pSC.U[1]]]))
 
         # Angle limitation per quadrant:
         for i in range(3, 6):
             if abs(self.pPos.X[i]) > math.pi:
                 if self.pPos.X[i] < 0:
-                    self.pPos.X[i] = self.pPos.X[i] + 2*math.pi
+                    self.pPos.X[i] = self.pPos.X[i] + 2 * math.pi
                 else:
-                    self.pPos.X[i] = self.pPos.X[i] - 2*math.pi
+                    self.pPos.X[i] = self.pPos.X[i] - 2 * math.pi
 
         # Pose of the robot's center:
-        self.pPos.Xc[0] = self.pPos.X[0] - np.array([[math.cos(self.pPos.X[5]), (-1)*math.sin(self.pPos.X[5]), 0], [math.sin(self.pPos.X[5]), math.cos(self.pPos.X[5]), 0], [0, 0, 1]])*np.array([[self.pPar.a*math.cos(self.pPar.alpha)], [self.pPar.a*math.sin(self.pPar.alpha)], [0]])
-
+        self.pPos.Xc[[0, 1, 5]] = self.pPos.X[[0, 1, 5]] - np.dot(np.array([[math.cos(self.pPos.X[5]), (-1) * math.sin(self.pPos.X[5]), 0],
+                                                                 [math.sin(self.pPos.X[5]), math.cos(self.pPos.X[5]), 0],
+                                                                 [0, 0, 1]]),\
+                                                                 np.array([[self.pPar.a * math.cos(self.pPar.alpha)],
+                                                                            [self.pPar.a * math.sin(self.pPar.alpha)],
+                                                                            [0]]))
 
     def Simulate(self):
         fig_1 = plt.figure(1, figsize=[5, 5])
