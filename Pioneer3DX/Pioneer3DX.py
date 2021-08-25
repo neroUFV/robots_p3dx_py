@@ -217,13 +217,6 @@ class Pioneer3DX:
         if l == 2:
             Kinv = np.array([[math.cos(self.pPos.X[5]), math.sin(self.pPos.X[5])],
                              [(-1) * math.sin(self.pPos.X[5]) / self.pPar.a, math.cos(self.pPos.X[5]) / self.pPar.a]])
-"""
-        # Inverse Kinematic Matrix (3D)
-        elif l == 3:
-            Kinv = np.array([[math.cos(self.pPos.X[5]), math.sin(self.pPos.X[6]), 0],
-                             [(-1) * math.sin(self.pPos.X[5]) / self.pPar.a, math.cos(self.pPos.X[5]) / self.pPar.a, 0],
-                             [0, 0, 0], [0, 0, 0]])
-"""
 
         else:
             print('Invalid vector length (please verify dXr).')
@@ -232,12 +225,12 @@ class Pioneer3DX:
         self.pSC.Ur = np.dot(Kinv, dXr)
 
     def sKinematicModel(self):
-        K = np.array([[math.cos(self.pPos.X[5]), ((-1) * self.pPar.a * math.sin(self.pPos.X[5])) + self.pPar.alpha)],
-                      [math.sin(self.pPos.X[5]), (self.pPar.a * math.cos(self.pPos.X[5])) + self.pPar.alpha)],
+        K = np.array([[math.cos(self.pPos.X[5]), ((-1) * self.pPar.a * math.sin(self.pPos.X[5])) + self.pPar.alpha],\
+                      [math.sin(self.pPos.X[5]), (self.pPar.a * math.cos(self.pPos.X[5])) + self.pPar.alpha],\
                       [0, 1]])
 
         # Current position
-        self.pPos.X[[0, 1, 5]] = self.pPos.X[[0, 1, 5]] + np.dot(K, np.array([[self.pSC.U[0]], [self.pSC.U[1]]]) * self.pPar.Ts
+        self.pPos.X[[0, 1, 5]] = self.pPos.X[[0, 1, 5]] + np.dot(K, np.array([[self.pSC.U[0]], [self.pSC.U[1]]])) * self.pPar.Ts
 
         # first-time derivative of the current position
         self.pPos.X[[6, 8, 11]] = np.dot(K, np.array([[self.pSC.U[0]], [self.pSC.U[1]]]))
