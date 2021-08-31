@@ -5,6 +5,10 @@ import time
 import math
 
 
+# fig = plt.figure(1, figsize=[5, 5])
+# axis = [-5, 5, -5, 5]
+
+
 class Pioneer3DX:
     def __init__(self, pFlag=0, pID=0):
 
@@ -206,8 +210,9 @@ class Pioneer3DX:
 
         # Tava dentro de um if: "if self.pFlag.Conected == 1:"
         # The position is given in milimeters and the heading in degrees:
-        #TODO: Verificar os parâmetros de set_pose
-        self.set_pose(np.array([[self.pPos.Xc[0]*1000], [self.pPos.Xc[1]*1000], [self.pPos.Xc[5]*(180/math.pi)]]))
+        # TODO: Verificar os parâmetros de set_pose
+        self.set_pose(
+            np.array([[self.pPos.Xc[0] * 1000], [self.pPos.Xc[1] * 1000], [self.pPos.Xc[5] * (180 / math.pi)]]))
 
     def sInvKinematicModel(self, dXr):
         # Verify vector length:
@@ -225,12 +230,13 @@ class Pioneer3DX:
         self.pSC.Ur = np.dot(Kinv, dXr)
 
     def sKinematicModel(self):
-        K = np.array([[math.cos(self.pPos.X[5]), ((-1) * self.pPar.a * math.sin(self.pPos.X[5])) + self.pPar.alpha],\
-                      [math.sin(self.pPos.X[5]), (self.pPar.a * math.cos(self.pPos.X[5])) + self.pPar.alpha],\
+        K = np.array([[math.cos(self.pPos.X[5]), ((-1) * self.pPar.a * math.sin(self.pPos.X[5])) + self.pPar.alpha],
+                      [math.sin(self.pPos.X[5]), (self.pPar.a * math.cos(self.pPos.X[5])) + self.pPar.alpha],
                       [0, 1]])
 
         # Current position
-        self.pPos.X[[0, 1, 5]] = self.pPos.X[[0, 1, 5]] + np.dot(K, np.array([[self.pSC.U[0]], [self.pSC.U[1]]])) * self.pPar.Ts
+        self.pPos.X[[0, 1, 5]] = self.pPos.X[[0, 1, 5]] + np.dot(K, np.array(
+            [[self.pSC.U[0]], [self.pSC.U[1]]])) * self.pPar.Ts
 
         # first-time derivative of the current position
         self.pPos.X[[6, 8, 11]] = np.dot(K, np.array([[self.pSC.U[0]], [self.pSC.U[1]]]))
@@ -244,23 +250,22 @@ class Pioneer3DX:
                     self.pPos.X[i] = self.pPos.X[i] - 2 * math.pi
 
         # Pose of the robot's center:
-        self.pPos.Xc[[0, 1, 5]] = self.pPos.X[[0, 1, 5]] - np.dot(np.array([[math.cos(self.pPos.X[5]), (-1) * math.sin(self.pPos.X[5]), 0],
-                                                                 [math.sin(self.pPos.X[5]), math.cos(self.pPos.X[5]), 0],
-                                                                 [0, 0, 1]]),\
-                                                                 np.array([[self.pPar.a * math.cos(self.pPar.alpha)],
-                                                                            [self.pPar.a * math.sin(self.pPar.alpha)],
-                                                                            [0]]))
+        self.pPos.Xc[[0, 1, 5]] = self.pPos.X[[0, 1, 5]] - np.dot(
+            np.array([[math.cos(self.pPos.X[5]), (-1) * math.sin(self.pPos.X[5]), 0],
+                      [math.sin(self.pPos.X[5]), math.cos(self.pPos.X[5]), 0],
+                      [0, 0, 1]]),
+            np.array([[self.pPar.a * math.cos(self.pPar.alpha)],
+                      [self.pPar.a * math.sin(self.pPar.alpha)],
+                      [0]]))
 
-    def Simulate(self):
-        fig_1 = plt.figure(1, figsize=[5, 5])
+    def Draw(self, fig, axis):
         self.shape.set_color('r')
-        grid_1 = fig_1.add_subplot()
+        grid_1 = fig.add_subplot()
         grid_1.add_patch(self.shape)
         plt.xlabel("x")
         plt.ylabel("y")
-        plt.axis([-5, 5, -5, 5])
+        plt.axis(axis)
         plt.grid()
-        plt.title("Pioneer P3DX - Simulator")
         plt.show()
 
 
