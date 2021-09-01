@@ -7,6 +7,9 @@ import math
 
 # fig = plt.figure(1, figsize=[5, 5])
 # axis = [-5, 5, -5, 5]
+# triangle_points = np.array([[0, np.sqrt(3) / 3],
+#                             [-0.5, -np.sqrt(3) / 6],
+#                             [0.5, -np.sqrt(3) / 6]])
 
 
 class Pioneer3DX:
@@ -22,11 +25,15 @@ class Pioneer3DX:
         self.pFlag = pFlag
 
         # Simulation:
-        triangle_points = np.array([[0, 2 * (np.sqrt(1 ** 2 - 0.5 ** 2)) / 3],
-                                    [-0.5, -(np.sqrt(1 ** 2 - 0.5 ** 2)) / 3],
-                                    [0.5, -(np.sqrt(1 ** 2 - 0.5 ** 2)) / 3]])
+        self.triangle_points = np.array([[0, np.sqrt(3) / 3],
+                                         [-0.5, -np.sqrt(3) / 6],
+                                         [0.5, -np.sqrt(3) / 6]])
 
-        self.shape = Polygon(triangle_points, closed=False)
+        self.pos_inicial = np.array([[0, np.sqrt(3) / 3],
+                                    [-0.5, -np.sqrt(3) / 6],
+                                    [0.5, -np.sqrt(3) / 6]])
+
+        self.shape = Polygon(self.triangle_points, closed=False)
 
         self.iParameters()
         self.iControlVariables()
@@ -136,7 +143,10 @@ class Pioneer3DX:
 
     def set_pose(self, pose):
         # P.pPos.X como parâmetro, P.pPos.X é um estado
-        self.pPos.X = pose
+        self.triangle_points[:, 0] = self.pos_inicial[:, 0] + pose[0]
+        self.triangle_points[:, 1] = self.pos_inicial[:, 1] + pose[1]
+        self.shape.set_xy(self.triangle_points)
+        # self.pPos.X = pose
 
     def rGetSensorData(self):
         self.pPos.Xa = self.pPos.X
