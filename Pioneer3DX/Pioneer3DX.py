@@ -7,9 +7,9 @@ import math
 
 # fig = plt.figure(1, figsize=[5, 5])
 # axis = [-5, 5, -5, 5]
-# triangle_points = np.array([[0, np.sqrt(3) / 3],
-#                             [-0.5, -np.sqrt(3) / 6],
-#                             [0.5, -np.sqrt(3) / 6]])
+triangle_points = np.array([[0, np.sqrt(3) / 3],
+                            [-0.5, -np.sqrt(3) / 6],
+                            [0.5, -np.sqrt(3) / 6]])
 
 
 class Pioneer3DX:
@@ -29,9 +29,9 @@ class Pioneer3DX:
                                          [-0.5, -np.sqrt(3) / 6],
                                          [0.5, -np.sqrt(3) / 6]])
 
-        self.pos_inicial = np.array([[0, np.sqrt(3) / 3],
-                                    [-0.5, -np.sqrt(3) / 6],
-                                    [0.5, -np.sqrt(3) / 6]])
+        self.origin = np.array([[0, np.sqrt(3) / 3],
+                                [-0.5, -np.sqrt(3) / 6],
+                                [0.5, -np.sqrt(3) / 6]])
 
         self.shape = Polygon(self.triangle_points, closed=False)
 
@@ -143,10 +143,65 @@ class Pioneer3DX:
 
     def set_pose(self, pose):
         # P.pPos.X como parâmetro, P.pPos.X é um estado
-        self.triangle_points[:, 0] = self.pos_inicial[:, 0] + pose[0]
-        self.triangle_points[:, 1] = self.pos_inicial[:, 1] + pose[1]
+        # Muda x e y:
+        self.triangle_points[:, 0] = self.origin[:, 0] + pose[0]
+        self.triangle_points[:, 1] = self.origin[:, 1] + pose[1]
+        self.shape.set_xy(self.triangle_points)
+        """
+        # Muda psi:
+        self.triangle_points[0, :] = np.dot(
+            np.array([[np.cos(pose[2]), np.sin(pose[2])], [-np.sin(pose[2]), np.cos(pose[2])]]),
+            self.origin[0, :]
+        )
+        self.triangle_points[1, :] = np.dot(
+            np.array([[np.cos(pose[2]), np.sin(pose[2])], [-np.sin(pose[2]), np.cos(pose[2])]]),
+            self.origin[1, :]
+        )
+        self.triangle_points[2, :] = np.dot(
+            np.array([[np.cos(pose[2]), np.sin(pose[2])], [-np.sin(pose[2]), np.cos(pose[2])]]),
+            self.origin[2, :]
+        )
+        self.shape.set_xy(self.triangle_points)
+        """
+        # Transformação homogênea:
+        """
+        self.triangle_points[0, :] = np.dot(
+            np.array([[np.cos(pose[2]), np.sin(pose[2]), self.origin[0, 0]], [-np.sin(pose[2]), np.cos(pose[2]), self.origin[0, 1]]]),
+            np.array([[pose[0] - self.origin[0, 0]], [pose[1] - self.origin[0, 1]], [1]])
+        )
+        self.triangle_points[1, :] = np.dot(
+            np.array([[np.cos(pose[2]), np.sin(pose[2]), self.origin[1, 0]], [-np.sin(pose[2]), np.cos(pose[2]), self.origin[1, 1]]]),
+            np.array([[pose[0] - self.origin[1, 0]], [pose[1] - self.origin[1, 1]], [1]])
+        )
+        self.triangle_points[0, :] = np.dot(
+            np.array([[np.cos(pose[2]), np.sin(pose[2]), self.origin[2, 0]], [-np.sin(pose[2]), np.cos(pose[2]), self.origin[2, 1]]]),
+            np.array([[pose[0] - self.origin[2, 0]], [pose[1] - self.origin[2, 1]], [1]])
+        )
         self.shape.set_xy(self.triangle_points)
         # self.pPos.X = pose
+        
+    
+        # Transformação homogênea:
+        self.triangle_points[0] = np.dot(
+            np.array([[np.cos(pose[2]), np.sin(pose[2]), self.origin[0][0]],
+                     [-np.sin(pose[2]), np.cos(pose[2]), self.origin[0][1]]]),
+            np.array([[pose[0] - self.triangle_points[0][0]], [pose[1] - self.triangle_points[0][1]], [1]])
+        )
+
+        self.triangle_points[1] = np.dot(
+            np.array([[np.cos(pose[2]), np.sin(pose[2]), self.origin[1][0]],
+                     [-np.sin(pose[2]), np.cos(pose[2]), self.origin[1][1]]]),
+            np.array([[pose[0] - self.triangle_points[1][0]], [pose[1] - self.triangle_points[1][1]], [1]])
+        )
+
+        self.triangle_points[2] = np.dot(
+            np.array([[np.cos(pose[2]), np.sin(pose[2]), self.origin[2][0]],
+                     [-np.sin(pose[2]), np.cos(pose[2]), self.origin[2][1]]]),
+            np.array([[pose[0] - self.triangle_points[2][0]], [pose[1] - self.triangle_points[2][1]], [1]])
+        )
+
+        self.shape.set_xy(self.triangle_points)
+        """
 
     def rGetSensorData(self):
         self.pPos.Xa = self.pPos.X
